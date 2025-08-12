@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Vascular Boards Quiz (60Q+)</title>
+  <title>Vascular Boards Quiz</title>
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="theme-color" content="#0a0a0a" />
@@ -13,7 +13,7 @@
   <style>
     :root{--bg:#0a0a0a;--fg:#f5f5f5;--mut:#bdbdbd;--card:#111;--accent:#3b82f6;--ok:#16a34a;--bad:#dc2626}
     *{box-sizing:border-box} html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial}
-    .wrap{max-width:680px;margin:0 auto;padding:16px 16px 96px}
+    .wrap{max-width:680px;margin:0 auto;padding:16px 16px 112px}
     .top{position:sticky;top:0;background:rgba(10,10,10,.7);backdrop-filter:blur(8px);border-bottom:1px solid #222;padding:12px 16px;margin:-16px -16px 12px}
     .row{display:flex;gap:8px;align-items:center} .sp{flex:1}
     .btn{appearance:none;border:1px solid #2a2a2a;background:#151515;color:var(--fg);padding:12px 14px;border-radius:14px;font-size:16px}
@@ -28,15 +28,17 @@
     .foot .row{max-width:680px;margin:0 auto}
     small{color:var(--mut)} a{color:#93c5fd}
     .toggle{border-radius:999px;padding:6px 10px;border:1px solid #2a2a2a;background:#151515}
+    .pill{font-size:12px;border:1px solid #2a2a2a;border-radius:999px;padding:6px 10px;background:#151515}
   </style>
 </head>
 <body>
   <div class="wrap">
     <div class="top">
       <div class="row">
-        <strong>Vascular Boards — Questions</strong>
+        <strong>Vascular Boards — Practice</strong>
         <div class="sp"></div>
-        <button class="toggle" id="themeBtn">☾</button>
+        <span id="stats" class="pill">0 / 0 • 0% • Session 0m</span>
+        <button class="toggle" id="themeBtn" title="Toggle theme">☾</button>
       </div>
       <div class="row" style="margin-top:8px">
         <div>Q <span id="qnum">1</span>/<span id="qtot">—</span></div>
@@ -46,10 +48,13 @@
       <div class="meter" style="margin-top:8px"><i id="meter" style="width:0%"></i></div>
     </div>
 
-    <div class="row" style="gap:8px;margin:8px 0 12px">
+    <div class="row" style="gap:8px;margin:8px 0 12px; flex-wrap:wrap">
       <button class="btn pri" id="newBtn">New Session (Shuffle)</button>
       <button class="btn" id="timerBtn">Start Timer</button>
       <button class="btn" id="refsBtn">Show Refs</button>
+      <button class="btn" id="reviewBtn">Review Incorrect</button>
+      <button class="btn" id="exportBtn">Export CSV</button>
+      <button class="btn" id="resetBtn">Reset Progress</button>
     </div>
 
     <div class="card" id="qcard">
@@ -68,9 +73,9 @@
       </div>
     </div>
 
-    <div style="margin:16px 0 96px">
+    <div style="margin:16px 0 112px">
       <small>Score: <b id="score">0</b> / <b id="tot">0</b> • <span id="answered">0 answered</span></small><br/>
-      <small>To add more questions later, just replace <code>questions.json</code> in this repo.</small>
+      <small>To add or edit questions later, just replace <code>questions.json</code> in this repo.</small>
     </div>
   </div>
 
@@ -106,6 +111,7 @@
 
     let qs = []; let order=[]; let idx=0; let answers=[];
     let showRefs=false; let startTs=Date.now(); let timerOn=false; let dark=true;
+    let reviewMode=false;
 
     // Elements
     const qnum = document.getElementById('qnum');
@@ -122,6 +128,7 @@
     const ansEl = document.getElementById('answered');
     const timerEl = document.getElementById('timer');
     const themeBtn = document.getElementById('themeBtn');
+    const statsEl = document.getElementById('stats');
 
     const newBtn=document.getElementById('newBtn');
     const timerBtn=document.getElementById('timerBtn');
@@ -131,6 +138,9 @@
     const fprev=document.getElementById('fprev');
     const fnext=document.getElementById('fnext');
     const frand=document.getElementById('frand');
+    const reviewBtn=document.getElementById('reviewBtn');
+    const exportBtn=document.getElementById('exportBtn');
+    const resetBtn=document.getElementById('resetBtn');
 
     function init(){
       // load/persist
@@ -142,6 +152,7 @@
       startTs = lsGet('sf_start', Date.now());
       timerOn = !!lsGet('sf_timer', false);
       dark = !!lsGet('sf_dark', true);
+      reviewMode = !!lsGet('sf_review', false);
       applyTheme();
       qtot.textContent = qs.length; totEl.textContent = qs.length;
       render();
@@ -157,14 +168,41 @@
     themeBtn.onclick = ()=>{ dark = !dark; applyTheme(); };
 
     function shuffle(arr){for(let i=arr.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]];}return arr}
-    function reset(sh){answers = qs.map(()=>({choice:null,correct:null,ts:Date.now()})); lsSet('sf_answers',answers); idx=0; lsSet('sf_idx',idx); startTs=Date.now(); lsSet('sf_start',startTs); order = sh? shuffle(qs.map((_,i)=>i)): qs.map((_,i)=>i); lsSet('sf_order',order); render();}
+    function reset(sh){
+      answers = qs.map(()=>({choice:null,correct:null,ts:Date.now()}));
+      lsSet('sf_answers',answers); idx=0; lsSet('sf_idx',idx);
+      startTs=Date.now(); lsSet('sf_start',startTs);
+      order = sh? shuffle(qs.map((_,i)=>i)): qs.map((_,i)=>i);
+      lsSet('sf_order',order); reviewMode=false; lsSet('sf_review',reviewMode);
+      render();
+    }
 
     function render(){
       if(!qs.length){ qtext.textContent='No questions found in questions.json'; return;}
-      const qi = order[idx];
+
+      // if review mode, filter order to only incorrect
+      let effectiveOrder = order;
+      if(reviewMode){
+        effectiveOrder = order.filter(i => answers[i]?.correct === false);
+        if(!effectiveOrder.length){
+          reviewMode = false; lsSet('sf_review', false);
+          effectiveOrder = order;
+        }
+        idx = Math.min(idx, effectiveOrder.length-1);
+      }
+
+      const total = qs.length;
+      const answeredCount = answers.filter(x=>x.correct!==null).length;
+      const correctCount = answers.filter(x=>x.correct===true).length;
+      const pct = total? Math.round(correctCount/total*100) : 0;
+      statsEl.textContent = `${correctCount} / ${total} • ${pct}% • ${formatMinutes((Date.now()-startTs)/60000)}m`;
+
+      const qi = effectiveOrder[idx] ?? 0;
       const q = qs[qi];
-      qnum.textContent = idx+1;  qtot.textContent = qs.length; totEl.textContent = qs.length;
-      meter.style.width = ((idx+1)/qs.length*100).toFixed(1)+'%';
+      qnum.textContent = (effectiveOrder.indexOf(qi)+1) || (idx+1);
+      qtot.textContent = reviewMode ? effectiveOrder.length : total;
+      totEl.textContent = total;
+      meter.style.width = (((effectiveOrder.indexOf(qi)+1) || (idx+1))/ (reviewMode ? effectiveOrder.length : total) * 100).toFixed(1)+'%';
       qtext.textContent = q["Question"];
       optsDiv.innerHTML = '';
       const letters=['A','B','C','D'];
@@ -178,7 +216,7 @@
           if(isRight) b.classList.add('ok');
           if(picked&&!isRight) b.classList.add('bad');
         }
-        b.onclick=()=>pick(L);
+        b.onclick=()=>pick(L, qi);
         optsDiv.appendChild(b);
       });
       // feedback
@@ -190,28 +228,30 @@
           refWrap.hidden=false; refLink.href=q["Reference URL"]; refLink.textContent = q["Reference Title"]||q["Reference URL"];
         } else { refWrap.hidden=true; }
       } else { expl.hidden=true; }
-      // score
+      // score & persist
       const sc = answers.filter(x=>x.correct===true).length;
       const an = answers.filter(x=>x.correct!==null).length;
       scoreEl.textContent = sc; ansEl.textContent = an + ' answered';
-      // persist
-      lsSet('sf_qs',qs); lsSet('sf_order',order); lsSet('sf_idx',idx); lsSet('sf_answers',answers); lsSet('sf_showRefs',showRefs); lsSet('sf_timer',timerOn);
+      lsSet('sf_qs',qs); lsSet('sf_order',order); lsSet('sf_idx',idx); lsSet('sf_answers',answers); lsSet('sf_showRefs',showRefs); lsSet('sf_timer',timerOn); lsSet('sf_review',reviewMode);
     }
 
-    function pick(L){
-      const qi = order[idx];
+    function pick(L, qi){
       const q = qs[qi];
       const correct = q["Correct"]===L;
       answers[qi] = {choice:L, correct, ts: Date.now()};
       render();
     }
 
-    function next(){ idx = Math.min(idx+1, qs.length-1); lsSet('sf_idx',idx); render(); }
-    function prev(){ idx = Math.max(idx-1, 0); lsSet('sf_idx',idx); render(); }
+    function next(){ idx = idx+1; render(); }
+    function prev(){ idx = Math.max(idx-1, 0); render(); }
+    function formatMinutes(m){ return Math.floor(m); }
 
     newBtn.onclick = ()=> reset(true);
-    nextBtn.onclick = next; prevBtn.onclick = prev; fnext.onclick = next; fprev.onclick = prev; frand.onclick=()=>{ idx = Math.floor(Math.random()*qs.length); lsSet('sf_idx',idx); render(); };
+    nextBtn.onclick = next; prevBtn.onclick = prev; fnext.onclick = next; fprev.onclick = prev;
+    frand.onclick=()=>{ idx = Math.floor(Math.random()*(reviewMode? order.filter(i=>answers[i]?.correct===false).length : qs.length)); render(); };
     refsBtn.onclick = ()=>{ showRefs=!showRefs; refsBtn.textContent = showRefs? 'Hide Refs':'Show Refs'; render(); };
+    reviewBtn.onclick = ()=>{ reviewMode = !reviewMode; lsSet('sf_review', reviewMode); idx = 0; render(); };
+    resetBtn.onclick = ()=>{ if(confirm('Reset local progress?')){ localStorage.removeItem('sf_answers'); answers = qs.map(()=>({choice:null,correct:null,ts:Date.now()})); render(); } };
 
     // Timer
     let tInt=null; function tick(){ const s = Math.floor((Date.now()-startTs)/1000); timerEl.textContent = s? Math.floor(s/60)+'m '+(s%60)+'s':'0s'; }
@@ -220,6 +260,30 @@
       startTs = Date.now(); lsSet('sf_start',startTs); timerOn=true; lsSet('sf_timer',timerOn); tick(); tInt=setInterval(tick,1000);
     };
     if(timerOn){ tick(); tInt=setInterval(tick,1000);} else { timerEl.textContent='Timer off'; }
+
+    // Export CSV
+    exportBtn.onclick = ()=>{
+      const rows = [['Question','YourChoice','CorrectChoice','WasCorrect','Timestamp']];
+      answers.forEach((a,i)=>{
+        const q = qs[i];
+        rows.push([
+          (q?.Question||'').replaceAll('"','""'),
+          a?.choice ?? '',
+          q?.Correct ?? '',
+          a?.correct === null ? '' : (a?.correct ? '1' : '0'),
+          a?.ts ?? ''
+        ]);
+      });
+      const csv = rows.map(r => r.map(x => `"${x}"`).join(',')).join('\n');
+      const blob = new Blob([csv], {type: 'text/csv'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = 'vascular-quiz-results.csv'; a.click();
+      URL.revokeObjectURL(url);
+    };
+
+    // Initial placeholders
+    document.getElementById('qtext').textContent = 'App is ready. Questions will load here…';
   </script>
 </body>
 </html>
