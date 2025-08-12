@@ -1,4 +1,4 @@
-const CACHE = 'vascular-quiz-jg-v2';
+const CACHE = 'vascular-quiz-jg-v3';
 const ASSETS = [
   './',
   './index.html',
