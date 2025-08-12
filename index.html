@@ -1,16 +1,225 @@
-<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Vascular Boards Quiz</title><link rel="manifest" href="manifest.webmanifest">
-<style>body{font-family:system-ui;margin:0;padding:20px;background:#0a0a0a;color:#f5f5f5}</style></head>
-<body><h1>Vascular Boards — JG</h1><p>App is ready. Questions will load here.</p>
-<script>
-const QUESTIONS=[{"Question":"Sample placeholder: ABI diagnostic threshold for PAD?","A":"≤0.90","B":">1.4","C":"1.0–1.3","D":"0.91–0.99","Correct":"A","Explanation":"ABI ≤0.90 indicates PAD.","Reference Title":"ABI – StatPearls","Reference URL":"https://www.ncbi.nlm.nih.gov/books/NBK544226/"}];
-console.log("Loaded",QUESTIONS.length,"questions");
-</script>
+
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Vascular Boards Quiz (60Q+)</title>
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="theme-color" content="#0a0a0a" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="icon-192.png" />
+  <style>
+    :root{--bg:#0a0a0a;--fg:#f5f5f5;--mut:#bdbdbd;--card:#111;--accent:#3b82f6;--ok:#16a34a;--bad:#dc2626}
+    *{box-sizing:border-box} html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial}
+    .wrap{max-width:680px;margin:0 auto;padding:16px 16px 96px}
+    .top{position:sticky;top:0;background:rgba(10,10,10,.7);backdrop-filter:blur(8px);border-bottom:1px solid #222;padding:12px 16px;margin:-16px -16px 12px}
+    .row{display:flex;gap:8px;align-items:center} .sp{flex:1}
+    .btn{appearance:none;border:1px solid #2a2a2a;background:#151515;color:var(--fg);padding:12px 14px;border-radius:14px;font-size:16px}
+    .btn:active{transform:scale(.98)} .btn.pri{background:var(--accent);border-color:var(--accent);color:white}
+    .meter{height:8px;border-radius:999px;background:#1f2937;overflow:hidden} .meter>i{display:block;height:100%;background:var(--accent)}
+    .card{background:var(--card);border:1px solid #222;border-radius:18px;padding:16px}
+    .q{font-weight:600;line-height:1.4}
+    .opt{display:block;width:100%;text-align:left;margin-top:8px;padding:14px;border:1px solid #2a2a2a;border-radius:14px;background:#121212;font-size:16px}
+    .opt.ok{border-color:#14532d;background:#052e14} .opt.bad{border-color:#3f0c0c;background:#2a0909}
+    .expl{margin-top:12px;border-radius:12px;padding:12px;border:1px solid #234;background:#0b1420}
+    .foot{position:fixed;left:0;right:0;bottom:0;border-top:1px solid #222;background:rgba(10,10,10,.9);backdrop-filter:blur(8px);padding:8px}
+    .foot .row{max-width:680px;margin:0 auto}
+    small{color:var(--mut)} a{color:#93c5fd}
+    .toggle{border-radius:999px;padding:6px 10px;border:1px solid #2a2a2a;background:#151515}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top">
+      <div class="row">
+        <strong>Vascular Boards — Questions</strong>
+        <div class="sp"></div>
+        <button class="toggle" id="themeBtn">☾</button>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <div>Q <span id="qnum">1</span>/<span id="qtot">—</span></div>
+        <div class="sp"></div>
+        <div id="timer">Timer off</div>
+      </div>
+      <div class="meter" style="margin-top:8px"><i id="meter" style="width:0%"></i></div>
+    </div>
+
+    <div class="row" style="gap:8px;margin:8px 0 12px">
+      <button class="btn pri" id="newBtn">New Session (Shuffle)</button>
+      <button class="btn" id="timerBtn">Start Timer</button>
+      <button class="btn" id="refsBtn">Show Refs</button>
+    </div>
+
+    <div class="card" id="qcard">
+      <div class="q" id="qtext">App is ready. Questions will load here…</div>
+      <div id="opts"></div>
+      <div class="expl" id="expl" hidden>
+        <div id="expText"></div>
+        <div id="refWrap" style="margin-top:6px" hidden>
+          <small>Reference: <a id="refLink" target="_blank" rel="noreferrer noopener"></a></small>
+        </div>
+      </div>
+      <div class="row" style="margin-top:12px">
+        <button class="btn" id="prevBtn">◀ Prev</button>
+        <div class="sp"></div>
+        <button class="btn" id="nextBtn">Next ▶</button>
+      </div>
+    </div>
+
+    <div style="margin:16px 0 96px">
+      <small>Score: <b id="score">0</b> / <b id="tot">0</b> • <span id="answered">0 answered</span></small><br/>
+      <small>To add more questions later, just replace <code>questions.json</code> in this repo.</small>
+    </div>
+  </div>
+
+  <div class="foot">
+    <div class="row">
+      <button class="btn" id="fprev">Prev</button>
+      <button class="btn" id="frand">Random</button>
+      <button class="btn" id="fnext">Next</button>
+    </div>
+  </div>
+
   <script>
+    // Fetch question set from questions.json
+    let QUESTIONS = [];
+    fetch('./questions.json', {cache:'no-store'})
+      .then(r => r.json())
+      .then(data => { QUESTIONS = data; init(); })
+      .catch(err => {
+        document.getElementById('qtext').textContent = 'Could not load questions.json. Check that it exists at the repo root.';
+        console.error(err);
+      });
+
+    // Register service worker
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', function() {
-        navigator.serviceWorker.register('./sw.js').catch(function(e){console.log('SW error',e)});
+        navigator.serviceWorker.register('./sw.js').catch(function(){});
       });
     }
+
+    // State with localStorage
+    const lsGet = (k, v) => JSON.parse(localStorage.getItem(k) || "null") ?? v;
+    const lsSet = (k, v) => localStorage.setItem(k, JSON.stringify(v));
+
+    let qs = []; let order=[]; let idx=0; let answers=[];
+    let showRefs=false; let startTs=Date.now(); let timerOn=false; let dark=true;
+
+    // Elements
+    const qnum = document.getElementById('qnum');
+    const qtot = document.getElementById('qtot');
+    const meter = document.getElementById('meter');
+    const qtext = document.getElementById('qtext');
+    const optsDiv = document.getElementById('opts');
+    const expl = document.getElementById('expl');
+    const expText = document.getElementById('expText');
+    const refWrap = document.getElementById('refWrap');
+    const refLink = document.getElementById('refLink');
+    const scoreEl = document.getElementById('score');
+    const totEl = document.getElementById('tot');
+    const ansEl = document.getElementById('answered');
+    const timerEl = document.getElementById('timer');
+    const themeBtn = document.getElementById('themeBtn');
+
+    const newBtn=document.getElementById('newBtn');
+    const timerBtn=document.getElementById('timerBtn');
+    const refsBtn=document.getElementById('refsBtn');
+    const prevBtn=document.getElementById('prevBtn');
+    const nextBtn=document.getElementById('nextBtn');
+    const fprev=document.getElementById('fprev');
+    const fnext=document.getElementById('fnext');
+    const frand=document.getElementById('frand');
+
+    function init(){
+      // load/persist
+      qs = lsGet('sf_qs', QUESTIONS);
+      order = lsGet('sf_order', qs.map((_,i)=>i));
+      idx = lsGet('sf_idx', 0);
+      answers = lsGet('sf_answers', qs.map(()=>({choice:null,correct:null,ts:Date.now()})));
+      showRefs = !!lsGet('sf_showRefs', false);
+      startTs = lsGet('sf_start', Date.now());
+      timerOn = !!lsGet('sf_timer', false);
+      dark = !!lsGet('sf_dark', true);
+      applyTheme();
+      qtot.textContent = qs.length; totEl.textContent = qs.length;
+      render();
+    }
+
+    // Theme
+    function applyTheme() {
+      document.body.style.background = dark ? '#0a0a0a' : '#ffffff';
+      document.body.style.color = dark ? '#f5f5f5' : '#111111';
+      themeBtn.textContent = dark ? '☾' : '☀';
+      lsSet('sf_dark', dark);
+    }
+    themeBtn.onclick = ()=>{ dark = !dark; applyTheme(); };
+
+    function shuffle(arr){for(let i=arr.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]];}return arr}
+    function reset(sh){answers = qs.map(()=>({choice:null,correct:null,ts:Date.now()})); lsSet('sf_answers',answers); idx=0; lsSet('sf_idx',idx); startTs=Date.now(); lsSet('sf_start',startTs); order = sh? shuffle(qs.map((_,i)=>i)): qs.map((_,i)=>i); lsSet('sf_order',order); render();}
+
+    function render(){
+      if(!qs.length){ qtext.textContent='No questions found in questions.json'; return;}
+      const qi = order[idx];
+      const q = qs[qi];
+      qnum.textContent = idx+1;  qtot.textContent = qs.length; totEl.textContent = qs.length;
+      meter.style.width = ((idx+1)/qs.length*100).toFixed(1)+'%';
+      qtext.textContent = q["Question"];
+      optsDiv.innerHTML = '';
+      const letters=['A','B','C','D'];
+      letters.forEach(L=>{
+        const b=document.createElement('button'); b.className='opt';
+        b.textContent = L+') '+q[L];
+        const a = answers[qi];
+        if(a.correct!==null){
+          const picked = a.choice===L;
+          const isRight = q["Correct"]===L;
+          if(isRight) b.classList.add('ok');
+          if(picked&&!isRight) b.classList.add('bad');
+        }
+        b.onclick=()=>pick(L);
+        optsDiv.appendChild(b);
+      });
+      // feedback
+      const a = answers[qi];
+      if(a.correct!==null){
+        expl.hidden=false;
+        expText.textContent = q["Explanation"]||'';
+        if(showRefs && q["Reference URL"]){
+          refWrap.hidden=false; refLink.href=q["Reference URL"]; refLink.textContent = q["Reference Title"]||q["Reference URL"];
+        } else { refWrap.hidden=true; }
+      } else { expl.hidden=true; }
+      // score
+      const sc = answers.filter(x=>x.correct===true).length;
+      const an = answers.filter(x=>x.correct!==null).length;
+      scoreEl.textContent = sc; ansEl.textContent = an + ' answered';
+      // persist
+      lsSet('sf_qs',qs); lsSet('sf_order',order); lsSet('sf_idx',idx); lsSet('sf_answers',answers); lsSet('sf_showRefs',showRefs); lsSet('sf_timer',timerOn);
+    }
+
+    function pick(L){
+      const qi = order[idx];
+      const q = qs[qi];
+      const correct = q["Correct"]===L;
+      answers[qi] = {choice:L, correct, ts: Date.now()};
+      render();
+    }
+
+    function next(){ idx = Math.min(idx+1, qs.length-1); lsSet('sf_idx',idx); render(); }
+    function prev(){ idx = Math.max(idx-1, 0); lsSet('sf_idx',idx); render(); }
+
+    newBtn.onclick = ()=> reset(true);
+    nextBtn.onclick = next; prevBtn.onclick = prev; fnext.onclick = next; fprev.onclick = prev; frand.onclick=()=>{ idx = Math.floor(Math.random()*qs.length); lsSet('sf_idx',idx); render(); };
+    refsBtn.onclick = ()=>{ showRefs=!showRefs; refsBtn.textContent = showRefs? 'Hide Refs':'Show Refs'; render(); };
+
+    // Timer
+    let tInt=null; function tick(){ const s = Math.floor((Date.now()-startTs)/1000); timerEl.textContent = s? Math.floor(s/60)+'m '+(s%60)+'s':'0s'; }
+    timerBtn.onclick = ()=>{
+      if(tInt){ clearInterval(tInt); tInt=null; timerOn=false; timerEl.textContent='Timer off'; lsSet('sf_timer',timerOn); return; }
+      startTs = Date.now(); lsSet('sf_start',startTs); timerOn=true; lsSet('sf_timer',timerOn); tick(); tInt=setInterval(tick,1000);
+    };
+    if(timerOn){ tick(); tInt=setInterval(tick,1000);} else { timerEl.textContent='Timer off'; }
   </script>
-</body></html>
+</body>
+</html>
