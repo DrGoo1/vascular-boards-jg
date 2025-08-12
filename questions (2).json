@@ -1,0 +1,57 @@
+[
+  {
+    "Question": "1) A 72-year-old man with HTN and COPD presents with 5.6-cm infrarenal AAA discovered on surveillance. CTA shows favorable neck and iliac access. Best management?",
+    "A": "Open AAA repair now",
+    "B": "Continue surveillance until 6.0 cm",
+    "C": "Endovascular aneurysm repair (EVAR) now",
+    "D": "Stop smoking and re-image in 6 months",
+    "Correct": "C",
+    "Explanation": "Elective repair threshold is typically ≥5.5 cm in men. With EVAR-favorable anatomy, EVAR is appropriate.",
+    "Reference Title": "Abdominal Aortic Aneurysm (Management) – StatPearls",
+    "Reference URL": "https://www.ncbi.nlm.nih.gov/books/NBK470237/"
+  },
+  {
+    "Question": "2) A 64-year-old woman with 5.1-cm infrarenal AAA on CTA. Otherwise healthy. Neck adequate; iliac access small but passable. Best timing?",
+    "A": "Observe; threshold 5.5 cm for all",
+    "B": "Proceed with EVAR given female threshold",
+    "C": "Open repair only due to sex",
+    "D": "No intervention unless symptomatic",
+    "Correct": "B",
+    "Explanation": "Women have a lower rupture threshold; many guidelines support elective repair around 5.0 cm.",
+    "Reference Title": "Aortic Disease Overview – StatPearls Point-of-Care",
+    "Reference URL": "https://www.statpearls.com/point-of-care/164104"
+  },
+  {
+    "Question": "3) A 69-year-old with severe postprandial pain, food fear, and 20-lb weight loss. Duplex shows >70% stenosis of celiac and SMA; IMA occluded. CTA confirms multivessel disease. Best revascularization?",
+    "A": "Open aorto-mesenteric bypass only",
+    "B": "Endovascular first-line (SMA stenting)",
+    "C": "Observation and PPIs",
+    "D": "IMA endarterectomy",
+    "Correct": "B",
+    "Explanation": "SMA is the key target; endovascular-first approach is standard in many centers.",
+    "Reference Title": "Chronic Mesenteric Ischemia – StatPearls",
+    "Reference URL": "https://www.ncbi.nlm.nih.gov/books/NBK430748/"
+  },
+  {
+    "Question": "4) A 58-year-old man with new severe abdominal pain out of proportion to exam. ECG: atrial fibrillation. Lactate elevated. CTA: abrupt SMA occlusion. Best initial step?",
+    "A": "IV heparin and urgent SMA embolectomy/endo-thrombectomy",
+    "B": "Observation for 24 h",
+    "C": "Colonoscopy",
+    "D": "Broad-spectrum antibiotics only",
+    "Correct": "A",
+    "Explanation": "Embolic AMI requires prompt anticoagulation and urgent revascularization.",
+    "Reference Title": "Mesenteric Ischemia – StatPearls",
+    "Reference URL": "https://www.ncbi.nlm.nih.gov/books/NBK513354/"
+  },
+  {
+    "Question": "5) A 76-year-old with prior EVAR has sac enlargement from 5.6→6.0 cm at 12 months. CTA: contrast filling via lumbar arteries; proximal/distal seals intact. Management?",
+    "A": "Observe; no action needed",
+    "B": "Treat as Type I endoleak with proximal cuff",
+    "C": "Transarterial or translumbar embolization of feeders (Type II)",
+    "D": "Open conversion immediately",
+    "Correct": "C",
+    "Explanation": "Type II endoleak from branch retrograde flow is treated when the sac enlarges; embolization is typical.",
+    "Reference Title": "Endoleaks After EVAR – StatPearls",
+    "Reference URL": "https://www.ncbi.nlm.nih.gov/books/NBK554573/"
+  }
+]
