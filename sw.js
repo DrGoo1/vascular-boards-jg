@@ -1,5 +1,5 @@
 // Force-update SW: v7
-const CACHE = 'vascular-quiz-jg-v8';
+const CACHE = 'vascular-quiz-jg-v10';
 const ASSETS = [
   './',
   './index.html',
