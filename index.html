@@ -95,15 +95,18 @@
   </div>
 
   <script>
-    // Fetch question set from questions.json
-    let QUESTIONS = [];
-    fetch('./questions.json?v=2025-08-12', { cache: 'no-store' })
-      .then(r => r.json())
-      .then(data => { QUESTIONS = data; init(); })
-      .catch(err => {
-        document.getElementById('qtext').textContent = 'Could not load questions.json. Check that it exists at the repo root.';
-        console.error(err);
-      });
+  let QUESTIONS = [];
+  fetch('./questions.json?v=2025-08-12', { cache: 'no-store' })
+    .then(r => r.json())
+    .then(data => {
+      QUESTIONS = data;
+      // TODO: call your render/init function here with QUESTIONS
+      // e.g., startQuiz(QUESTIONS);
+      console.log('Loaded questions:', QUESTIONS.length);
+    })
+    .catch(err => console.error('Failed to load questions.json', err));
+</script>
+
 
     // Register service worker
     if ('serviceWorker' in navigator) {
