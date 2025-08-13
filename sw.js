@@ -1,11 +1,12 @@
-const CACHE = 'vascular-quiz-jg-v6';
+// Force-update SW: v7
+const CACHE = 'vascular-quiz-jg-v7';
 const ASSETS = [
   './',
   './index.html',
   './manifest.webmanifest',
   './icon-192.png',
-  './icon-512.png',
-  './questions.json'
+  './icon-512.png'
+  // NOTE: intentionally NOT precaching questions.json so it always checks network first
 ];
 
 self.addEventListener('install', (e) => {
@@ -26,18 +27,20 @@ self.addEventListener('activate', (e) => {
 
 self.addEventListener('fetch', (e) => {
   const url = new URL(e.request.url);
-  if (e.request.method === 'GET' && url.origin === location.origin) {
+
+  // Always try network first for the questions dataset so updates show immediately
+  if (e.request.method === 'GET' && url.pathname.endsWith('/questions.json')) {
     e.respondWith((async () => {
-      const cached = await caches.match(e.request);
-      if (cached) return cached;
       try {
-        const res = await fetch(e.request);
+        const fresh = await fetch(e.request, { cache: 'no-store' });
+        // Optionally cache the latest for offline fallback
         const c = await caches.open(CACHE);
-        c.put(e.request, res.clone());
-        return res;
+        c.put(e.request, fresh.clone());
+        return fresh;
       } catch {
-        return caches.match('./index.html');
+        // Offline fallback from cache if available
+        const cached = await caches.match(e.request);
+        if (cached) return cached;
+        return new Response(JSON.stringify([]), { headers: { 'Content-Type': 'application/json' } });
       }
-    })());
-  }
-});
+    })())
