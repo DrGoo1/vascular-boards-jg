@@ -3,111 +3,36 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Vascular Boards – JG</title>
-<link rel="manifest" href="./manifest.webmanifest" />
-<meta name="apple-mobile-web-app-capable" content="yes" />
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-<link rel="apple-touch-icon" href="./icon-192.png" />
+<title>Vascular Boards – Loading…</title>
+<meta name="robots" content="noindex">
 <style>
-  :root{--bg:#000;--fg:#fff;--card:#0b0b0b;--border:#242424;--ok:#166534;--bad:#7f1d1d;--muted:#9aa0a6}
-  html,body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
-  .shell{max-width:760px;margin:70px auto 120px;padding:16px}
-  .top{position:fixed;inset:0 0 auto 0;background:#111;color:#fff;padding:10px 14px;display:flex;gap:10px;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border)}
-  .q{font-size:1.1rem;margin:12px 0 8px}
-  .btn{display:block;width:100%;text-align:left;margin:8px 0;padding:12px 14px;border:1px solid var(--border);border-radius:14px;background:var(--card);color:var(--fg);font-size:16px}
-  .ok{background:#0b3d20;border-color:var(--ok)}
-  .bad{background:#4b0f0f;border-color:var(--bad)}
-  .panel{padding:12px;border:1px solid var(--border);border-radius:12px;margin-top:10px}
-  .nav{display:flex;gap:8px;margin-top:12px}
-  a{color:#7db3ff}
-  .pill{font-size:12px;color:var(--muted)}
+  html,body{margin:0;height:100%;background:#000;color:#fff;font-family:-apple-system,system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
+  .wrap{display:flex;align-items:center;justify-content:center;height:100%}
+  .card{padding:16px 20px;border:1px solid #333;border-radius:12px;background:#0b0b0b}
 </style>
 </head>
 <body>
-  <div class="top">
-    <div id="pos">Q 1/60</div>
-    <div id="score" class="pill">0 correct</div>
-  </div>
-  <div class="shell">
-    <div id="app">Loading…</div>
-  </div>
-
+<div class="wrap"><div class="card" id="msg">Updating…</div></div>
 <script>
-(async function(){
-  // Always fetch fresh questions (bust caches)
-  const QV = 'v10-' + Date.now();
-  const res = await fetch('./questions.json?' + QV, { cache: 'no-store' });
-  const QUESTIONS = await res.json();
-
-  // --- Minimal, reliable renderer ---
-  const app = document.getElementById('app');
-  const pos = document.getElementById('pos');
-  const scoreEl = document.getElementById('score');
-  let i = 0;
-  const answers = Array(QUESTIONS.length).fill(null);
-
-  function render(){
-    const q = QUESTIONS[i];
-    pos.textContent = `Q ${i+1}/${QUESTIONS.length}`;
-    scoreEl.textContent = `${answers.filter(a=>a?.correct).length} correct`;
-
-    app.innerHTML = `
-      <div class="q">${q.Question}</div>
-      <div id="opts"></div>
-      <div id="explain" class="panel"></div>
-      <div class="nav">
-        <button id="prev" class="btn">◀️ Prev</button>
-        <button id="next" class="btn">Next ▶️</button>
-      </div>
-    `;
-
-    const opts = document.getElementById('opts');
-    ['A','B','C','D'].forEach(k=>{
-      const b = document.createElement('button');
-      b.className = 'btn';
-      b.textContent = `${k}) ${q[k] || ''}`;
-      b.onclick = ()=>{
-        const correct = (k === q.Correct);
-        answers[i] = { choice:k, correct };
-        showExplain();
-      };
-      opts.appendChild(b);
-    });
-
-    function showExplain(){
-      const chosen = answers[i]?.choice;
-      [...opts.children].forEach(btn=>{
-        const letter = btn.textContent.slice(0,1);
-        btn.classList.remove('ok','bad');
-        if (letter === q.Correct) btn.classList.add('ok');
-        if (chosen && letter === chosen && letter !== q.Correct) btn.classList.add('bad');
-      });
-      const x = document.getElementById('explain');
-      if (answers[i]) {
-        x.innerHTML = `
-          <div style="margin-bottom:6px">${answers[i].correct ? '✅ Correct' : '❌ Incorrect'}</div>
-          <div style="margin-bottom:6px">${q.Explanation || ''}</div>
-          ${q["Reference URL"] ? `<a href="${q["Reference URL"]}" target="_blank" rel="noreferrer">${q["Reference Title"]||'Reference'}</a>` : ''}
-        `;
-      } else {
-        x.innerHTML = `<span class="pill">Choose an answer to see explanation & reference.</span>`;
+// 1) Unregister ALL existing service workers for this scope (Safari caches them aggressively)
+(async () => {
+  const msg = document.getElementById('msg');
+  try {
+    if ('serviceWorker' in navigator) {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      for (const r of regs) { try { await r.unregister(); } catch {} }
+      // Also clear any controller
+      if (navigator.serviceWorker.controller) {
+        try { navigator.serviceWorker.controller.postMessage({type:'SKIP'}); } catch {}
       }
     }
-    showExplain();
-
-    document.getElementById('prev').onclick = ()=>{ i=Math.max(0,i-1); render(); };
-    document.getElementById('next').onclick = ()=>{ i=Math.min(QUESTIONS.length-1,i+1); render(); };
-  }
-
-  render();
-
-  // Register SW (safe even if already present)
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', function() {
-      navigator.serviceWorker.register('./sw.js').catch(()=>{});
-    });
-  }
+  } catch { /* ignore */ }
+  // 2) Hard redirect to the working page with a unique cache-buster so NOTHING cached is used
+  const ts = 'hard-' + Date.now();
+  msg.textContent = 'Reloading…';
+  location.replace('./simple.html?' + ts);
 })();
 </script>
 </body>
 </html>
+
