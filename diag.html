@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Vascular Boards – Diagnostics</title>
+<style>
+  body{font-family:-apple-system,Helvetica,Arial,sans-serif;background:#000;color:#fff;margin:0;padding:16px}
+  .card{border:1px solid #2a2a2a;border-radius:12px;padding:12px;margin:12px 0}
+  .ok{color:#18d36e} .bad{color:#ff6b6b}
+  code{background:#111;padding:2px 6px;border-radius:6px}
+</style>
+</head>
+<body>
+<h1>Diagnostics</h1>
+<div id="status" class="card">Loading…</div>
+
+<script>
+(async function(){
+  const out = document.getElementById('status');
+  function line(label, value, ok=true){
+    const p = document.createElement('p');
+    p.innerHTML = `<strong>${label}:</strong> <span class="${ok?'ok':'bad'}">${value}</span>`;
+    out.appendChild(p);
+  }
+
+  // 1) Try to fetch questions with a strong cache-bust
+  try {
+    const ver = 'diag-' + Date.now();
+    const res = await fetch('./questions.json?' + ver, { cache: 'no-store' });
+    const data = await res.json();
+    out.innerHTML = '';
+    line('questions.json length', data.length, data.length >= 10);
+    line('first question', (data[0] && data[0].Question) ? 'OK' : 'MISSING', !!(data[0] && data[0].Question));
+
+    // 2) Is a service worker controlling this page?
+    if ('serviceWorker' in navigator) {
+      const reg = await navigator.serviceWorker.getRegistration();
+      const ctrl = navigator.serviceWorker.controller;
+      line('service worker registered', reg ? 'YES' : 'NO', !!reg);
+      line('this page controlled by SW', ctrl ? 'YES' : 'NO', !!ctrl);
+      if (reg) {
+        line('sw script', (reg.active && reg.active.scriptURL) ? reg.active.scriptURL : 'unknown');
+      }
+    } else {
+      line('service worker API', 'NOT SUPPORTED', false);
+    }
+
+    // 3) Show current page URL (confirms you’re on Pages)
+    line('page', location.href);
+  } catch (e) {
+    out.innerHTML = '<p class="bad">Failed to load questions.json</p><pre>'+String(e)+'</pre>';
+  }
+})();
+</script>
+</body>
+</html>
