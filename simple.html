@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Vascular Boards – Simple Test</title>
+<style>
+  body{margin:0;background:#000;color:#fff;font-family:-apple-system,system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
+  .wrap{max-width:760px;margin:32px auto;padding:16px}
+  .q{font-size:18px;margin:12px 0}
+  .btn{display:block;width:100%;text-align:left;margin:8px 0;padding:12px 14px;border:1px solid #2a2a2a;border-radius:14px;background:#121212;color:#f5f5f5}
+  .ok{background:#0b3d20;border-color:#166534}
+  .bad{background:#4b0f0f;border-color:#7f1d1d}
+  a{color:#7db3ff}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Simple Quiz Test</h1>
+  <div id="meta">Loading…</div>
+  <div id="app"></div>
+</div>
+
+<script>
+// NOTE: NO service worker registration here on purpose.
+
+(async function(){
+  // Hard cache-bust to avoid any stale copy
+  const ver = 'simple-' + Date.now();
+  const url = './questions.json?' + ver;
+
+  let data;
+  try {
+    const res = await fetch(url, { cache: 'no-store' });
+    data = await res.json();
+  } catch (e) {
+    document.getElementById('meta').textContent = 'Failed to load questions.json: ' + e;
+    return;
+  }
+
+  document.getElementById('meta').textContent = 'Loaded ' + data.length + ' questions.';
+
+  const app = document.getElementById('app');
+  let i = 0, answers = Array(data.length).fill(null);
+
+  function render(){
+    const q = data[i];
+    app.innerHTML = `
+      <div>Q ${i+1}/${data.length}</div>
+      <div class="q">${q.Question}</div>
+      <div id="opts"></div>
+      <div id="x" style="margin-top:10px;border:1px solid #2a2a2a;border-radius:12px;padding:10px"></div>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button id="prev" class="btn">◀️ Prev</button>
+        <button id="next" class="btn">Next ▶️</button>
+      </div>
+    `;
+
+    const opts = document.getElementById('opts');
+    ['A','B','C','D'].forEach(k=>{
+      const b = document.createElement('button');
+      b.className = 'btn';
+      b.textContent = `${k}) ${q[k] || ''}`;
+      b.onclick = ()=>{
+        const correct = (k === q.Correct);
+        answers[i] = { choice:k, correct };
+        showExplain();
+      };
+      opts.appendChild(b);
+    });
+
+    function showExplain(){
+      const chosen = answers[i]?.choice;
+      [...opts.children].forEach(btn=>{
+        const letter = btn.textContent.slice(0,1);
+        btn.classList.remove('ok','bad');
+        if (letter === q.Correct) btn.classList.add('ok');
+        if (chosen && letter === chosen && letter !== q.Correct) btn.classList.add('bad');
+      });
+      const x = document.getElementById('x');
+      if (answers[i]) {
+        x.innerHTML = `
+          <div style="margin-bottom:6px">${answers[i].correct ? '✅ Correct' : '❌ Incorrect'}</div>
+          <div style="margin-bottom:6px">${q.Explanation || ''}</div>
+          ${q["Reference URL"] ? `<a href="${q["Reference URL"]}" target="_blank" rel="noreferrer">${q["Reference Title"]||'Reference'}</a>` : ''}
+        `;
+      } else {
+        x.textContent = 'Choose an answer to see explanation.';
+      }
+    }
+    showExplain();
+
+    document.getElementById('prev').onclick = ()=>{ i=Math.max(0,i-1); render(); };
+    document.getElementById('next').onclick = ()=>{ i=Math.min(data.length-1,i+1); render(); };
+  }
+
+  render();
+})();
+</script>
+</body>
+</html>
