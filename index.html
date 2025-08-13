@@ -97,7 +97,7 @@
   <script>
     // Fetch question set from questions.json
     let QUESTIONS = [];
-    fetch('./questions.json', {cache:'no-store'})
+    fetch('./questions.json?v=2025-08-12', { cache: 'no-store' })
       .then(r => r.json())
       .then(data => { QUESTIONS = data; init(); })
       .catch(err => {
