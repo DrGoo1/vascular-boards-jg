@@ -94,18 +94,18 @@
     </div>
   </div>
 
-  <script>
+ <script>
   let QUESTIONS = [];
   fetch('./questions.json?v=2025-08-12', { cache: 'no-store' })
     .then(r => r.json())
     .then(data => {
       QUESTIONS = data;
-      // TODO: call your render/init function here with QUESTIONS
-      // e.g., startQuiz(QUESTIONS);
-      console.log('Loaded questions:', QUESTIONS.length);
+      console.log('Loaded questions:', QUESTIONS.length);  // should log 60
+      startQuiz(QUESTIONS);                                // <-- UNCOMMENTED
     })
     .catch(err => console.error('Failed to load questions.json', err));
 </script>
+
 
 
     // Register service worker
