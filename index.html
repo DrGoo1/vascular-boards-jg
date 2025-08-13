@@ -38,7 +38,29 @@
     .pill{font-size:12px;border:1px solid #2a2a2a;border-radius:999px;padding:6px 10px;background:#151515}
   </style>
 </head>
-<body>
+<!-- DEBUG: prove we’re loading the 60-item file -->
+<script>
+(async function(){
+  const tag = 'v9-' + Date.now(); // hard cache-bust every load
+  const res = await fetch('./questions.json?' + tag, { cache: 'no-store' });
+  const data = await res.json();
+  console.log('[DEBUG] questions loaded:', data.length);
+  // Show a banner on the page so you can see it works without opening the console
+  let b = document.getElementById('debug-banner');
+  if (!b) {
+    b = document.createElement('div');
+    b.id = 'debug-banner';
+    b.style.position='fixed'; b.style.bottom='8px'; b.style.left='8px';
+    b.style.padding='8px 12px'; b.style.borderRadius='10px';
+    b.style.background='#0b5'; b.style.color='#fff'; b.style.font='14px/1.2 -apple-system,Helvetica,Arial,sans-serif';
+    b.style.zIndex='9999';
+    document.body.appendChild(b);
+  }
+  b.textContent = 'Loaded questions: ' + data.length;
+})();
+</script>
+ 
+  <body>
   <div class="wrap">
     <div class="top">
       <div class="row">
